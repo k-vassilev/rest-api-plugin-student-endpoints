@@ -56,7 +56,7 @@ function ob_student( $id ){
 }
 
 
-
+// REST GET Endpoints
 add_action('rest_api_init', function(){
 
     // Route for all students
@@ -71,6 +71,54 @@ add_action('rest_api_init', function(){
         'callback' => 'ob_student')
     );
 });
+
+
+
+
+// REST POST Endpoint
+add_action('rest_api_init', function() {
+
+    // Route to post
+    register_rest_route('/ob/v1', '/students',[
+        'methods' => ['POST'],
+        'callback' => 'ob_add_student',
+        'permission_callback' => 'authenticate_user'
+      ]);
+});
+  
+function ob_add_student() {
+
+    // Student data to be sent
+    $student = array(
+          'post_title' => sanitize_text_field( $_POST['post_title'] ),
+          'post_content' => sanitize_text_field($_POST['post_content']),
+          'post_excerpt' => sanitize_text_field($_POST['post_excerpt']),
+          'post_status' => 'publish',
+          'post_type' => 'student',
+          );
+    return wp_insert_post( $student );
+}
+
+// Checks if user is administrator and can post
+function authenticate_user() {
+
+    if (current_user_can( 'administrator' )) {
+        return current_user_can( 'administrator' );
+    }else {
+        return 'Not authorized to post';
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 ?>
 
