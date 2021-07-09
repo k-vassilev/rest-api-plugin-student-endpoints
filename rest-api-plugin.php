@@ -7,6 +7,7 @@
  */
 
 
+
  // Callback for all students
 function ob_students(){
     $args = [
@@ -15,46 +16,15 @@ function ob_students(){
     ];
 
     $students = get_posts( $args );
-
-    $data = [];
-
-    $i = 0;
-    
-    foreach($students as $student){
-        $data[$i]['id'] = $student -> ID;
-        $data[$i]['title'] = $student -> post_title;
-        $data[$i]['content'] = $student -> post_content;
-        $data[$i]['slug'] = $student -> post_name;
-        $data[$i]['featured_image']['thumbnail'] = get_the_post_thumbnail_url( $student -> ID, 'thumbnail' );
-        $data[$i]['featured_image']['medium'] = get_the_post_thumbnail_url( $student -> ID, 'medium' );
-        $data[$i]['featured_image']['large'] = get_the_post_thumbnail_url( $student -> ID, 'large' );
-        $i++;
-        
-    }
-
-    return $data;
+    return $students;
 }
 
 // Callback for a single student by ID
 function ob_student( $id ){
-    $args = [
-        'id' => $id['id'],
-        'post_type' => 'student'
-    ];
-
-    $student = get_posts( $args );
-
-    $data['id'] = $student[0] -> ID;
-    $data['title'] = $student[0] -> post_title;
-    $data['content'] = $student[0] -> post_content;
-    $data['slug'] = $student[0] -> post_name;
-    $data['featured_image']['thumbnail'] = get_the_post_thumbnail_url( $student[0] -> ID, 'thumbnail' );
-    $data['featured_image']['medium'] = get_the_post_thumbnail_url( $student[0] -> ID, 'medium' );
-    $data['featured_image']['large'] = get_the_post_thumbnail_url( $student[0] -> ID, 'large' );
-        
-    return $data;
+    
+    $student_id = sanitize_text_field( $id['id'] );
+    return get_post($student_id);
 }
-
 
 // REST GET Endpoints
 add_action('rest_api_init', function(){
@@ -66,12 +36,25 @@ add_action('rest_api_init', function(){
     ]);
 
     // Route for a single student
-    register_rest_route( 'ob/v1', 'students/(?P<id>[a-zA-Z0-9-]+)', array(
+    register_rest_route( 'ob/v1', 'students/(?P<id>\d+)', array(
         'methods' => 'GET',
         'callback' => 'ob_student')
     );
 });
 
+
+
+// REST AUTHENTICATION
+// Checks if user is administrator and can post
+function authenticate_user() {
+    // wpApiSettings in console to get the nonce
+    
+    if (current_user_can( 'administrator' )) {
+        return current_user_can( 'administrator' );
+    }else {
+         return 'Not authorized to post';
+    }
+}
 
 
 
@@ -90,35 +73,59 @@ function ob_add_student() {
 
     // Student data to be sent
     $student = array(
-          'post_title' => sanitize_text_field( $_POST['post_title'] ),
-          'post_content' => sanitize_text_field($_POST['post_content']),
-          'post_excerpt' => sanitize_text_field($_POST['post_excerpt']),
-          'post_status' => 'publish',
-          'post_type' => 'student',
-          );
+        'post_title' => sanitize_text_field( $_POST['post_title'] ),
+        'post_content' => sanitize_text_field($_POST['post_content']),
+        'post_excerpt' => sanitize_text_field($_POST['post_excerpt']),
+        'post_status' => 'publish',
+        'post_type' => 'student',
+        );
     return wp_insert_post( $student );
 }
 
-// Checks if user is administrator and can post
-function authenticate_user() {
 
-    if (current_user_can( 'administrator' )) {
-        return current_user_can( 'administrator' );
-    }else {
-        return 'Not authorized to post';
-    }
+
+// REST EDIT Endpoint
+add_action('rest_api_init', function() {
+    
+    // Route to update
+    register_rest_route('/ob/v1', '/students/update/(?P<id>\d+)',[
+        'methods' => ['POST'],
+        'callback' => 'ob_update_student',
+        'permission_callback' => 'authenticate_user'
+      ]);
+});
+  
+function ob_update_student($args) {
+
+    // gets the student data based on the id;
+    $student_id = sanitize_text_field($args['id']);
+    $student = array(
+        'ID' => $student_id,
+        'post_title' => sanitize_text_field( $_POST['post_title'] ),
+        'post_content' => sanitize_text_field($_POST['post_content']),
+        'post_excerpt' => sanitize_text_field($_POST['post_excerpt']),
+        'post_status' => 'publish',
+        'post_type' => 'student',
+        );
+    return wp_update_post( $student );
 }
 
 
 
+// REST DELETE Endpoint
+function ob_delete_student($args) {
 
+    $student_id = sanitize_text_field($args['id']);
+    return wp_delete_post($student_id);
+}
 
+add_action('rest_api_init', function() {
 
-
-
-
-
-
-
+    register_rest_route('/ob/v1', '/students/delete/(?P<id>\d+)',[
+        'methods' => ['DELETE'],
+        'callback' => 'ob_delete_student',
+        'permission_callback' => 'authenticate_user',
+    ]);
+});
 ?>
 
