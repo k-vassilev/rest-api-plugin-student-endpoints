@@ -63,7 +63,7 @@ add_action(
 
 /**  REST AUTHENTICATION
  * Checks if user is administrator and can post */
-function authenticate_user() {
+function ob_authenticate_user() {
 	// wpApiSettings in console to get the nonce.
 	if ( current_user_can( 'administrator' ) ) {
 		return current_user_can( 'administrator' );
@@ -85,7 +85,7 @@ add_action(
 			array(
 				'methods'             => array( 'POST' ),
 				'callback'            => 'ob_add_student',
-				'permission_callback' => 'authenticate_user',
+				'permission_callback' => 'ob_authenticate_user',
 			)
 		);
 	}
@@ -123,7 +123,7 @@ add_action(
 			array(
 				'methods'             => array( 'POST' ),
 				'callback'            => 'ob_update_student',
-				'permission_callback' => 'authenticate_user',
+				'permission_callback' => 'ob_authenticate_user',
 			)
 		);
 	}
@@ -173,7 +173,7 @@ add_action(
 			array(
 				'methods'             => array( 'DELETE' ),
 				'callback'            => 'ob_delete_student',
-				'permission_callback' => 'authenticate_user',
+				'permission_callback' => 'ob_authenticate_user',
 			)
 		);
 	}
