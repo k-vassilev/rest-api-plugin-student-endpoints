@@ -16,6 +16,11 @@ function ob_students() {
 	);
 
 	$students = get_posts( $args );
+
+	if ( count( $students ) <= 0 ) {
+		echo 'No students found';
+		return;
+	}
 	return $students;
 }
 
@@ -29,7 +34,11 @@ function ob_students() {
  */
 function ob_student( $id ) {
 	$student_id = sanitize_text_field( $id['id'] );
+	if ( null === ( get_post( $student_id ) ) ) {
+		return 'No such ID exists';
+	}
 	return get_post( $student_id );
+
 }
 
 
@@ -101,15 +110,18 @@ function ob_add_student() {
 
 	// Student data to be sent.
 	$student = array(
-		'post_title'   => sanitize_text_field( $_POST[ 'post_title' ] ),
-		'post_content' => sanitize_text_field( $_POST[ 'post_content' ] ),
-		'post_excerpt' => sanitize_text_field( $_POST[ 'post_excerpt' ] ),
+		'post_title'   => sanitize_text_field( $_POST['post_title'] ),
+		'post_content' => sanitize_text_field( $_POST['post_content'] ),
+		'post_excerpt' => sanitize_text_field( $_POST['post_excerpt'] ),
 		'post_status'  => 'publish',
 		'post_type'    => 'student',
 	);
-	return wp_insert_post( $student );
+	if ( ! $student['post_title'] ) {
+		return 'Student name is mandatory!';
+	}
+	echo $student['post_title'] . ' has been added!';
+	wp_insert_post( $student );
 }
-
 
 
 /**  REST EDIT Endpoint */
@@ -147,7 +159,17 @@ function ob_update_student( $args ) {
 		'post_status'  => 'publish',
 		'post_type'    => 'student',
 	);
-	return wp_update_post( $student );
+
+	if ( ! get_post_status( $student['ID'] ) ) {
+		echo 'Cannot edit non-existent student!';
+		return;
+	}
+	if ( ! $student['post_title'] ) {
+		return 'Student name is mandatory!';
+	}
+
+	echo $student['post_title'] . ' has been updated!';
+	wp_update_post( $student );
 }
 
 
@@ -161,7 +183,11 @@ function ob_update_student( $args ) {
  */
 function ob_delete_student( $args ) {
 	$student_id = sanitize_text_field( $args['id'] );
-	return wp_delete_post( $student_id );
+	if ( ! get_post_status( $student_id ) ) {
+		return 'Cannot delete non-existent student!';
+	}
+	echo get_the_title( $student_id ) . ' has been deleted!';
+	wp_delete_post( $student_id );
 }
 
 add_action(
